@@ -26,7 +26,7 @@ class NIDParser:
     # Keywords to identify different fields
     NAME_KEYWORDS = ['name', 'Namae', 'Name: ']
     DOB_KEYWORDS = ['date of birth', 'dob', 'birth', 'Date of Birth', 'Birth']
-    NID_KEYWORDS = ['nid', 'id no', 'id no:', 'ID NO']
+    NID_KEYWORDS = ['nid', 'id no', 'id no:', 'ID NO', 'nid no']
     ADDRESS_KEYWORDS = ['address', 'ঠিকানা', 'village', 'post', 'thana', 'district']
     
     @staticmethod
@@ -220,6 +220,7 @@ class NIDParser:
     def _extract_nid_number(texts: list[str]) -> Optional[str]:
         """
         Extract NID number from OCR texts.
+        Handles both continuous digits and space-separated formats.
         
         Args:
             texts: List of extracted texts
@@ -229,33 +230,60 @@ class NIDParser:
         """
         nid_candidates = []
         
+        # First pass: Look for NID near keywords
         for i, text in enumerate(texts):
             text_lower = text.lower()
             
             # Check if line contains NID keywords
             if any(keyword in text_lower for keyword in NIDParser.NID_KEYWORDS):
-                # NID might be in the same line or next line
+                # NID might be in the same line or next few lines
                 search_texts = [text]
-                if i + 1 < len(texts):
-                    search_texts.append(texts[i + 1])
+                for offset in range(1, 4):  # Check next 3 lines
+                    if i + offset < len(texts):
+                        search_texts.append(texts[i + offset])
                 
                 for search_text in search_texts:
+                    # Try to extract continuous digits
                     matches = NIDParser.NID_NUMBER_PATTERN.findall(search_text)
-                    nid_candidates.extend(matches)
+                    for match in matches:
+                        if len(match) >= 10:
+                            nid_candidates.append(match)
+                    
+                    # Try to extract space-separated digits (e.g., "600 124 4158")
+                    # Remove all non-digit and non-space characters, then extract digits
+                    cleaned = re.sub(r'[^0-9\s]', '', search_text)
+                    # Find sequences of digits separated by spaces
+                    space_separated = re.findall(r'\d+(?:\s+\d+)+', cleaned)
+                    for match in space_separated:
+                        # Remove spaces to get the actual number
+                        digits_only = match.replace(' ', '')
+                        if len(digits_only) >= 10:
+                            nid_candidates.append(digits_only)
         
-        # Fallback: Look for 10-17 digit numbers (NID format)
+        # Second pass: Look for space-separated digit patterns anywhere
+        if not nid_candidates:
+            for text in texts:
+                # Look for patterns like "600 124 4158" or "6001244158"
+                cleaned = re.sub(r'[^0-9\s]', '', text)
+                space_separated = re.findall(r'\d+(?:\s+\d+)+', cleaned)
+                for match in space_separated:
+                    digits_only = match.replace(' ', '')
+                    if len(digits_only) in [10, 13, 17]:
+                        nid_candidates.append(digits_only)
+        
+        # Third pass: Fallback to continuous digit patterns
         if not nid_candidates:
             for text in texts:
                 matches = NIDParser.NID_NUMBER_PATTERN.findall(text)
-                # Filter to get most likely NID (usually 10, 13, or 17 digits)
                 for match in matches:
                     if len(match) in [10, 13, 17]:
                         nid_candidates.append(match)
         
-        # Return the first valid candidate
+        # Return the first valid candidate, preferring longer numbers
         if nid_candidates:
-            # Prefer longer numbers if multiple found
-            return max(nid_candidates, key=len)
+            # Remove duplicates and sort by length (prefer longer)
+            unique_candidates = list(set(nid_candidates))
+            return max(unique_candidates, key=len)
         
         return None
     
