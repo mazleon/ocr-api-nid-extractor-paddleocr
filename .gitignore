@@ -18,3 +18,9 @@ images/
 *.bmp
 *.tiff
 
+# DS Store
+.DS_Store
+# Outputs fodler
+outputs/
+# Logs folder
+logs/
