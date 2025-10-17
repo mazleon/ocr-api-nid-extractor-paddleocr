@@ -54,15 +54,40 @@ class OCRService:
                     "GPU execution requested via settings, but PaddleOCR pipeline no longer accepts 'use_gpu'. Falling back to CPU.",
                 )
 
-            self._ocr_engine = PaddleOCR(
-                lang=settings.OCR_LANG,
-                ocr_version=settings.OCR_VERSION,
-                text_detection_model_name=settings.OCR_DET_MODEL,
-                text_recognition_model_name=settings.OCR_REC_MODEL,
-                use_doc_orientation_classify=False,
-                use_doc_unwarping=False,
-                use_textline_orientation=False,
-            )
+            # Build PaddleOCR initialization parameters
+            ocr_params = {
+                "lang": settings.OCR_LANG,
+                "ocr_version": settings.OCR_VERSION,
+                "text_detection_model_name": settings.OCR_DET_MODEL,
+                "text_recognition_model_name": settings.OCR_REC_MODEL,
+                "use_doc_orientation_classify": False,
+                "use_doc_unwarping": False,
+                "use_textline_orientation": False,
+                "rec_batch_num": settings.OCR_REC_BATCH_NUM,
+                "cpu_threads": settings.OCR_CPU_THREADS,
+                "enable_mkldnn": settings.OCR_ENABLE_MKLDNN,
+            }
+            
+            # Add model cache directories if configured
+            if settings.OCR_DET_MODEL_DIR:
+                ocr_params["text_detection_model_dir"] = settings.OCR_DET_MODEL_DIR
+                log_with_context(
+                    logger,
+                    "info",
+                    "Using custom detection model directory",
+                    model_dir=settings.OCR_DET_MODEL_DIR
+                )
+            
+            if settings.OCR_REC_MODEL_DIR:
+                ocr_params["text_recognition_model_dir"] = settings.OCR_REC_MODEL_DIR
+                log_with_context(
+                    logger,
+                    "info",
+                    "Using custom recognition model directory",
+                    model_dir=settings.OCR_REC_MODEL_DIR
+                )
+            
+            self._ocr_engine = PaddleOCR(**ocr_params)
             
             log_with_context(
                 logger, 
@@ -203,6 +228,24 @@ class OCRService:
             # Convert to RGB if needed (handle RGBA, grayscale, etc.)
             if image.mode != 'RGB':
                 image = image.convert('RGB')
+
+            # Resize image if exceeding configured max dimension
+            if settings.OCR_MAX_IMAGE_DIMENSION:
+                max_dim = settings.OCR_MAX_IMAGE_DIMENSION
+                width, height = image.size
+                largest_side = max(width, height)
+                if largest_side > max_dim:
+                    scale = max_dim / largest_side
+                    new_size = (int(width * scale), int(height * scale))
+                    image = image.resize(new_size, Image.BILINEAR)
+                    log_with_context(
+                        logger,
+                        "debug" if settings.DEBUG else "info",
+                        "Resized image for OCR",
+                        original_dimensions=f"{width}x{height}",
+                        new_dimensions=f"{new_size[0]}x{new_size[1]}",
+                        max_dimension=max_dim
+                    )
             
             # Convert PIL Image to numpy array (required by PaddleOCR)
             image_array = np.array(image)

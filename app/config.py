@@ -40,6 +40,15 @@ class Settings(BaseSettings):
     OCR_REC_MODEL: str = "en_PP-OCRv5_mobile_rec"
     OCR_USE_GPU: bool = False
     OCR_CONFIDENCE_THRESHOLD: float = 0.3
+    OCR_ENABLE_MKLDNN: bool = True
+    OCR_CPU_THREADS: int = 8
+    OCR_REC_BATCH_NUM: int = 6
+    OCR_MAX_IMAGE_DIMENSION: int | None = 640
+
+    # Model Cache Directories (None = auto-download to default cache)
+    OCR_MODEL_CACHE_DIR: str | None = None  # Base cache directory
+    OCR_DET_MODEL_DIR: str | None = None    # Detection model directory
+    OCR_REC_MODEL_DIR: str | None = None    # Recognition model directory
     
     # Caching
     ENABLE_CACHE: bool = True
