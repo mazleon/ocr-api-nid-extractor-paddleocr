@@ -119,3 +119,18 @@ class OCRResponse(BaseModel):
     results: list[OCRResult] = Field(default_factory=list, description="List of detected texts")
     processing_time_ms: float = Field(..., description="OCR processing time")
     error: Optional[str] = Field(None, description="Error message if any")
+
+
+class EasyOCRResult(BaseModel):
+    """EasyOCR result for a single text detection with multilingual support."""
+    text: str = Field(..., description="Detected text (Bengali/English)")
+    confidence: float = Field(..., description="Detection confidence score (0-1)")
+    bounding_box: Optional[list[list[float]]] = Field(None, description="Bounding box coordinates [[x1,y1], [x2,y2], [x3,y3], [x4,y4]]")
+
+
+class EasyOCRResponse(BaseModel):
+    """Complete EasyOCR processing response for multilingual text extraction."""
+    success: bool = Field(..., description="Whether OCR was successful")
+    results: list[EasyOCRResult] = Field(default_factory=list, description="List of detected texts with Bengali/English support")
+    processing_time_ms: float = Field(..., description="OCR processing time in milliseconds")
+    error: Optional[str] = Field(None, description="Error message if any")

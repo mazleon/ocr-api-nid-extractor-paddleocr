@@ -2,12 +2,15 @@
 
 ## Description
 
-Production-ready RESTful API for extracting structured information from Bangladeshi National ID (NID) cards using PaddleOCR and FastAPI.
+Production-ready RESTful API for extracting structured information from Bangladeshi National ID (NID) cards using **dual OCR engines**: PaddleOCR for front images and EasyOCR for back images with Bengali/English multilingual support.
 
 ## 🌟 Features
 
-- **Intelligent OCR Processing**: Uses PaddleOCR V5 for high-accuracy text extraction
-- **Structured Data Extraction**: Automatically extracts Name, Date of Birth, NID Number, Address, and returns full `raw_text` lists for both sides
+- **Dual OCR Engine Strategy**: 
+  - **PaddleOCR V5** for NID front (English-optimized)
+  - **EasyOCR** for NID back (Bengali/English multilingual)
+- **Structured Data Extraction**: Automatically extracts Name, Date of Birth, NID Number, Address (in Bengali/English), and returns full `raw_text` lists for both sides
+- **Bengali Language Support**: Native support for Bengali (বাংলা) text recognition in addresses
 - **Production-Ready**: 
   - Comprehensive error handling and validation
   - Request/response logging with structured JSON logs
@@ -88,5 +91,30 @@ docker-compose up -d
 
 # View logs
 docker-compose logs -f
+```
+
+## 🧪 Testing
+
+### Test EasyOCR Integration
+```bash
+# Run integration tests
+python test_easyocr_integration.py
+
+# Test with your own NID back image
+python test_easyocr_integration.py --image path/to/nid_back.jpg
+```
+
+### Test API Endpoints
+```bash
+# Test NID extraction
+python test_api_client.py --front samples/nid_front.jpg --back samples/nid_back.jpg
+```
+
+## 📚 Documentation
+
+- **API Documentation**: See `/docs` endpoint when running
+- **EasyOCR Integration**: See [docs/EASYOCR_INTEGRATION.md](docs/EASYOCR_INTEGRATION.md)
+- **Quick Start Guide**: See [QUICK_START.md](QUICK_START.md)
+
 ## Contributing
 

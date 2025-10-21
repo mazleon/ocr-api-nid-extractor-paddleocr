@@ -29,7 +29,9 @@ from app.exceptions import (
     OCRProcessingError
 )
 from app.services.ocr_service import get_ocr_service
+from app.services.easyocr_service import get_easyocr_service
 from app.services.nid_parser import NIDParser
+from app.services.nid_back_parser import NIDBackParser
 from app.middleware import (
     RequestLoggingMiddleware,
     RateLimitMiddleware,
@@ -52,12 +54,15 @@ async def lifespan(app: FastAPI):
     logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     
-    # Initialize OCR service
+    # Initialize OCR services
     try:
         ocr_service = get_ocr_service()
-        logger.info("OCR service initialized successfully")
+        logger.info("PaddleOCR service initialized successfully")
+        
+        easyocr_service = get_easyocr_service()
+        logger.info("EasyOCR service initialized successfully")
     except Exception as e:
-        logger.error(f"Failed to initialize OCR service: {str(e)}", exc_info=True)
+        logger.error(f"Failed to initialize OCR services: {str(e)}", exc_info=True)
         raise
     
     yield
@@ -65,17 +70,19 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("Shutting down application...")
     
-    # Clear cache
+    # Clear caches
     if settings.ENABLE_CACHE:
-        cache_cleared = ocr_service.clear_cache()
-        logger.info(f"Cleared {cache_cleared} cache entries")
+        paddle_cache_cleared = ocr_service.clear_cache()
+        easy_cache_cleared = easyocr_service.clear_cache()
+        logger.info(f"Cleared {paddle_cache_cleared} PaddleOCR cache entries")
+        logger.info(f"Cleared {easy_cache_cleared} EasyOCR cache entries")
 
 
 # Initialize FastAPI app
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="Production-ready API for extracting information from Bangladeshi National ID cards using PaddleOCR",
+    description="Production-ready API for extracting information from Bangladeshi National ID cards using PaddleOCR (front) and EasyOCR (back - Bengali/English)",
     lifespan=lifespan,
     docs_url="/docs" if settings.ENABLE_DOCS else None,
     redoc_url="/redoc" if settings.ENABLE_REDOC else None,
@@ -300,10 +307,11 @@ async def extract_nid_information(
                 f"Back image size ({len(back_bytes)} bytes) exceeds maximum allowed size ({settings.MAX_FILE_SIZE} bytes)"
             )
         
-        # Get OCR service
+        # Get OCR services
         ocr_service = get_ocr_service()
+        easyocr_service = get_easyocr_service()
         
-        # Process front image
+        # Process front image with PaddleOCR (English optimized)
         front_ocr_result = ocr_service.extract_text(
             front_bytes,
             nid_front.filename or "nid_front.jpg"
@@ -312,8 +320,8 @@ async def extract_nid_information(
         if not front_ocr_result.success:
             raise OCRProcessingError(f"Failed to process front image: {front_ocr_result.error}")
         
-        # Process back image
-        back_ocr_result = ocr_service.extract_text(
+        # Process back image with EasyOCR (Bengali/English multilingual)
+        back_ocr_result = easyocr_service.extract_text(
             back_bytes,
             nid_back.filename or "nid_back.jpg"
         )
@@ -323,7 +331,7 @@ async def extract_nid_information(
         
         # Parse NID information
         front_data = NIDParser.parse_nid_front(front_ocr_result)
-        back_data = NIDParser.parse_nid_back(back_ocr_result)
+        back_data = NIDBackParser.parse_nid_back(back_ocr_result)
         
         # Calculate total processing time
         processing_time_ms = (time.time() - start_time) * 1000
@@ -374,25 +382,33 @@ async def extract_nid_information(
 )
 async def clear_cache() -> dict:
     """
-    Clear all cached OCR results.
+    Clear all cached OCR results from both PaddleOCR and EasyOCR services.
     
     Returns:
-        Number of cache entries cleared
+        Number of cache entries cleared from each service
     """
     ocr_service = get_ocr_service()
-    cleared_count = ocr_service.clear_cache()
+    easyocr_service = get_easyocr_service()
+    
+    paddle_cleared = ocr_service.clear_cache()
+    easy_cleared = easyocr_service.clear_cache()
+    total_cleared = paddle_cleared + easy_cleared
     
     log_with_context(
         logger,
         "info",
         "Cache cleared via API",
-        entries_cleared=cleared_count
+        paddle_entries_cleared=paddle_cleared,
+        easy_entries_cleared=easy_cleared,
+        total_cleared=total_cleared
     )
     
     return {
         "status": "success",
         "message": f"Cache cleared successfully",
-        "entries_cleared": cleared_count
+        "paddle_ocr_entries_cleared": paddle_cleared,
+        "easy_ocr_entries_cleared": easy_cleared,
+        "total_entries_cleared": total_cleared
     }
 
 

@@ -50,6 +50,21 @@ class Settings(BaseSettings):
     OCR_DET_MODEL_DIR: str | None = None    # Detection model directory
     OCR_REC_MODEL_DIR: str | None = None    # Recognition model directory
     
+    # EasyOCR Configuration (for NID back - Bengali/English multilingual)
+    # Optimized for speed while maintaining accuracy
+    EASYOCR_USE_GPU: bool = False
+    EASYOCR_MODEL_DIR: str | None = None  # Model storage directory (None = default ~/.EasyOCR/model)
+    EASYOCR_CONFIDENCE_THRESHOLD: float = 0.25  # Lowered for better recall
+    EASYOCR_MAX_IMAGE_DIMENSION: int | None = 900  # Reduced from 1920 for faster processing
+    EASYOCR_PARAGRAPH_MODE: bool = False  # Combine results into paragraphs
+    EASYOCR_MIN_TEXT_SIZE: int = 8  # Reduced from 10 for smaller text
+    EASYOCR_TEXT_THRESHOLD: float = 0.6  # Lowered from 0.7 for speed
+    EASYOCR_LOW_TEXT_THRESHOLD: float = 0.3  # Lowered from 0.4 for speed
+    EASYOCR_LINK_THRESHOLD: float = 0.3  # Lowered from 0.4 for speed
+    EASYOCR_CANVAS_SIZE: int = 1920  # Reduced from 2560 for faster processing
+    EASYOCR_MAG_RATIO: float = 1.0  # Magnification ratio
+    EASYOCR_BATCH_SIZE: int = 10  # Batch size for recognition (higher = faster but more memory)
+    
     # Caching
     ENABLE_CACHE: bool = True
     CACHE_TTL_SECONDS: int = 3600  # 1 hour
