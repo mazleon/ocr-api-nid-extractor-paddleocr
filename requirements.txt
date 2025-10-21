@@ -67,3 +67,8 @@ pydantic-settings==2.7.1
 
 # Additional utilities
 python-dotenv==1.0.1
+
+# EasyOCR for multilingual text extraction (Bengali/English)
+easyocr==1.7.2
+torch>=2.0.0
+torchvision>=0.15.0

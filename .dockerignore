@@ -1,0 +1,77 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation (not needed in container)
+*.md
+!README.md
+docs/
+QUICK_START.md
+START_HERE.md
+INTEGRATION_SUMMARY.md
+PERFORMANCE_IMPROVEMENTS.md
+
+# Tests
+tests/
+test_*.py
+*_test.py
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Deployment files (already in container)
+deployments/
+docker-compose.yml
+Dockerfile
+
+# Logs (will be created in container)
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Model cache (will be downloaded in container)
+.paddlex/
+.EasyOCR/
+
+# Environment files (use docker-compose env vars instead)
+.env
+.env.local
+.env.*.local
+
+# Samples and examples
+samples/
+examples/

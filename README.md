@@ -84,14 +84,61 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 ## 🐳 Docker Deployment
 
-### Using Docker Compose (Recommended)
-```bash
-# Build and start
-docker-compose up -d
+### Quick Start with Docker
 
-# View logs
-docker-compose logs -f
+```bash
+# Navigate to deployments directory
+cd deployments
+
+# Option 1: Interactive deployment (recommended)
+chmod +x deploy.sh
+./deploy.sh
+
+# Option 2: Automated deployment
+./deploy.sh --auto
+
+# Option 3: Manual deployment
+docker-compose up -d
 ```
+
+### First Run Notes
+
+⚠️ **Important**: First run will download OCR models (~300MB):
+- PaddleOCR models: ~100MB
+- EasyOCR models (Bengali/English): ~200MB
+- **Time**: 2-5 minutes (depending on internet speed)
+- **Storage**: Models are cached in Docker volumes for reuse
+
+### Docker Features
+
+- ✅ **Multi-stage Build**: Optimized image size
+- ✅ **Model Caching**: Persistent volumes for faster restarts
+- ✅ **Health Checks**: Automatic monitoring
+- ✅ **Resource Limits**: CPU and memory constraints
+- ✅ **Auto-restart**: Automatic recovery from failures
+- ✅ **Security**: Non-root user execution
+
+### View Logs
+
+```bash
+# All logs
+docker-compose logs -f
+
+# Last 100 lines
+docker-compose logs --tail=100
+```
+
+### Stop/Remove
+
+```bash
+# Stop containers
+docker-compose down
+
+# Remove containers and volumes
+docker-compose down -v
+```
+
+For detailed Docker deployment guide, see [deployments/DOCKER_DEPLOYMENT.md](deployments/DOCKER_DEPLOYMENT.md)
 
 ## 🧪 Testing
 

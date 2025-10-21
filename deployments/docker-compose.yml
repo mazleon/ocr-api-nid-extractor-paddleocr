@@ -3,31 +3,72 @@ version: '3.8'
 services:
   nid-extraction-api:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: deployments/Dockerfile
     container_name: nid-extraction-api
     ports:
       - "8000:8000"
     environment:
+      # Application Settings
       - APP_NAME=NID Information Extraction API
       - DEBUG=False
       - ENVIRONMENT=production
       - HOST=0.0.0.0
       - PORT=8000
       - LOG_LEVEL=INFO
+      
+      # Cache Settings
       - ENABLE_CACHE=True
+      - CACHE_MAX_SIZE=5000
+      - CACHE_TTL_SECONDS=7200
+      
+      # Rate Limiting
       - RATE_LIMIT_ENABLED=True
+      - RATE_LIMIT_REQUESTS=100
+      - RATE_LIMIT_WINDOW_SECONDS=60
+      
+      # PaddleOCR Settings (for NID front)
+      - OCR_USE_GPU=False
+      - OCR_CONFIDENCE_THRESHOLD=0.3
+      - OCR_MAX_IMAGE_DIMENSION=640
+      
+      # EasyOCR Settings (for NID back - Bengali/English)
+      - EASYOCR_USE_GPU=False
+      - EASYOCR_CONFIDENCE_THRESHOLD=0.25
+      - EASYOCR_MAX_IMAGE_DIMENSION=640
+      - EASYOCR_MIN_TEXT_SIZE=8
+      - EASYOCR_TEXT_THRESHOLD=0.6
+      - EASYOCR_LOW_TEXT_THRESHOLD=0.3
+      - EASYOCR_LINK_THRESHOLD=0.3
+      - EASYOCR_CANVAS_SIZE=640
+      - EASYOCR_BATCH_SIZE=10
     volumes:
       - ./logs:/app/logs
+      - easyocr_models:/home/appuser/.EasyOCR/model
+      - paddlex_models:/home/appuser/.paddlex/official_models
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 120s  # Increased for model downloads
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
     networks:
       - nid-network
+
+volumes:
+  easyocr_models:
+    driver: local
+  paddlex_models:
+    driver: local
 
 networks:
   nid-network:
